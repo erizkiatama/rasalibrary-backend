@@ -47,7 +47,7 @@ type ServerError struct {
 }
 
 func (ths *ServerError) Error() string {
-	return fmt.Sprintf("%s: %s", ths.Code, ths.originalErr.Error())
+	return fmt.Sprintf("%s - %s", ths.Code, ths.originalErr.Error())
 }
 
 func (ths *ServerError) LogError() {

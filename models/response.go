@@ -22,7 +22,7 @@ func ConstructResponse(c *gin.Context, result interface{}, err error) {
 			return
 		}
 		customErr.LogError()
-		c.JSON(customErr.GetStatus(), response)
+		c.AbortWithStatusJSON(customErr.GetStatus(), response)
 		return
 	}
 

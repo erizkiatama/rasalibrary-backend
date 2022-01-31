@@ -1,0 +1,5 @@
+%syntax-version=1.0.0
+%project=rasalibrary.auth
+%uri=https://github.com/erizkiatama/rasalibrary-backend/db/migrations/auth
+
+20223101_init_user 2022-01-31T03:01:38Z Ezra Rizkiatama <erizkiatama@gmail.com> # Init auth schema and user model
