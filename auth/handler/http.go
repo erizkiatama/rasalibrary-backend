@@ -81,7 +81,8 @@ func (ths *handler) RefreshToken(c *gin.Context) {
 	if rtClaims, ok := refreshToken.Claims.(jwt.MapClaims); ok && refreshToken.Valid {
 		if rtClaims["refresh"] == true {
 			userID := rtClaims["userID"].(float64)
-			newTokenPair, err := helper.GenerateTokenPair(uint(userID))
+			profileID := rtClaims["profileID"].(float64)
+			newTokenPair, err := helper.GenerateTokenPair(uint(userID), uint(profileID))
 			if err != nil {
 				models.ConstructResponse(c, nil, err)
 				return

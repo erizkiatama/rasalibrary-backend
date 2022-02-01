@@ -8,12 +8,13 @@ import (
 	"github.com/erizkiatama/rasalibrary-backend/models"
 )
 
-func GenerateTokenPair(userID uint) (*models.TokenPair, error) {
+func GenerateTokenPair(userID, profileID uint) (*models.TokenPair, error) {
 	access := jwt.New(jwt.SigningMethodHS256)
 
 	atClaims := access.Claims.(jwt.MapClaims)
 	atClaims["access"] = true
 	atClaims["userID"] = userID
+	atClaims["profileID"] = profileID
 	atClaims["expires"] = time.Now().Add(24 * time.Hour).Unix()
 
 	// TODO: use env variable
@@ -27,8 +28,10 @@ func GenerateTokenPair(userID uint) (*models.TokenPair, error) {
 	rtClaims := refresh.Claims.(jwt.MapClaims)
 	rtClaims["refresh"] = true
 	rtClaims["userID"] = userID
-	rtClaims["expires"] = time.Now().Add(24 * time.Hour).Unix()
+	rtClaims["profileID"] = profileID
+	rtClaims["expires"] = time.Now().Add(72 * time.Hour).Unix()
 
+	// TODO: use env variable
 	rt, err := refresh.SignedString([]byte("rasalibrary-secret-key"))
 	if err != nil {
 		return nil, models.NewServerError("0100004", 500, err)
@@ -50,6 +53,7 @@ func ValidateToken(encodedToken string) (*jwt.Token, error) {
 			)
 
 		}
+		// TODO: use env variable
 		return []byte("rasalibrary-secret-key"), nil
 	})
 }

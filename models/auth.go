@@ -5,12 +5,25 @@ import (
 )
 
 type User struct {
-	ID        uint      `db:"id"`
-	Email     string    `db:"email"`
-	Password  string    `db:"password"`
-	IsAdmin   bool      `db:"is_admin"`
-	CreatedAt time.Time `db:"created_at"`
-	UpdatedAt time.Time `db:"updated_at"`
+	ID        uint
+	Email     string
+	Password  string
+	IsAdmin   bool
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Profile   UserProfile
+}
+
+type UserProfile struct {
+	ID           uint
+	Name         string
+	DateOfBirth  time.Time
+	Address      string
+	Sex          string
+	PhoneNumber  string
+	ProfilePhoto string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 type AuthService interface {
@@ -19,8 +32,8 @@ type AuthService interface {
 }
 
 type AuthRepository interface {
-	CreateUser(*User) error
-	GetUserByEmail(string) (*User, error)
+	CreateUser(User) (uint, uint, error)
+	GetUserWithProfileByEmail(string) (*User, error)
 }
 
 type LoginRequest struct {
@@ -29,9 +42,15 @@ type LoginRequest struct {
 }
 
 type RegisterRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	IsAdmin  bool   `json:"is_admin"`
+	Email        string `json:"email"`
+	Password     string `json:"password"`
+	IsAdmin      bool   `json:"is_admin"`
+	Name         string `json:"name"`
+	DateOfBirth  string `json:"dob"`
+	Address      string `json:"address"`
+	Sex          string `json:"sex"`
+	PhoneNumber  string `json:"phone_number"`
+	ProfilePhoto string `json:"profile_photo"`
 }
 
 type TokenPair struct {

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/erizkiatama/rasalibrary-backend/models"
 	"github.com/jmoiron/sqlx"
@@ -19,35 +20,73 @@ func NewPostgreSQLRepository(db *sqlx.DB) models.AuthRepository {
 	}
 }
 
-func (ths *postgreSQLRepository) CreateUser(user *models.User) error {
+type DBUserWithProfile struct {
+	UserID       uint      `db:"user_id"`
+	ProfileID    uint      `db:"profile_id"`
+	Email        string    `db:"email"`
+	Password     string    `db:"password"`
+	IsAdmin      bool      `db:"is_admin"`
+	Name         string    `db:"name"`
+	DateOfBirth  time.Time `db:"dob"`
+	Address      string    `db:"address"`
+	Sex          string    `db:"sex"`
+	PhoneNumber  string    `db:"phone_number"`
+	ProfilePhoto string    `db:"profile_photo"`
+}
+
+func (ths *postgreSQLRepository) CreateUser(user models.User) (uint, uint, error) {
+	dbUser := DBUserWithProfile{
+		UserID:       user.ID,
+		ProfileID:    user.Profile.ID,
+		Email:        user.Email,
+		Password:     user.Password,
+		IsAdmin:      user.IsAdmin,
+		Name:         user.Profile.Name,
+		DateOfBirth:  user.Profile.DateOfBirth,
+		Address:      user.Profile.Address,
+		Sex:          user.Profile.Sex,
+		PhoneNumber:  user.Profile.PhoneNumber,
+		ProfilePhoto: user.Profile.ProfilePhoto,
+	}
+
 	rows, err := ths.db.NamedQuery(
-		`INSERT INTO "auth".user (email, password, is_admin) 
-		VALUES (:email, :password, :is_admin) RETURNING *`,
-		user,
+		`WITH new_user AS (INSERT INTO "auth".user (email, password, is_admin) 
+		VALUES (:email, :password, :is_admin) RETURNING id)
+		INSERT INTO "auth".user_profile (name, dob, address, sex, phone_number, profile_photo, user_id) 
+		VALUES (:name, :dob, :address, :sex, :phone_number, :profile_photo, (SELECT id FROM new_user)) 
+		RETURNING user_id, id AS profile_id`,
+		dbUser,
 	)
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate") {
-			return models.NewClientError(
+			return 0, 0, models.NewClientError(
 				"0100011",
 				"user with email "+user.Email+" already exists",
 				400,
 			)
-		} else {
-			return models.NewServerError("0100011", 500, err)
 		}
+		return 0, 0, models.NewServerError("0100011", 500, err)
 	}
+
+	var userID, profileID uint
 	for rows.Next() {
-		err = rows.StructScan(user)
+		err = rows.Scan(&userID, &profileID)
 		if err != nil {
-			return models.NewServerError("0100012", 500, err)
+			return 0, 0, models.NewServerError("0100012", 500, err)
 		}
 	}
-	return nil
+
+	return userID, profileID, nil
 }
 
-func (ths *postgreSQLRepository) GetUserByEmail(email string) (*models.User, error) {
-	var user models.User
-	err := ths.db.Get(&user, `SELECT * FROM "auth".user WHERE email=$1`, email)
+func (ths *postgreSQLRepository) GetUserWithProfileByEmail(email string) (*models.User, error) {
+	var dbUser DBUserWithProfile
+	err := ths.db.Get(&dbUser,
+		`SELECT u.id AS user_id, password, p.id AS profile_id
+		FROM "auth".user AS u, "auth".user_profile AS p 
+		WHERE u.id = p.user_id AND email=$1`,
+		email,
+	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, models.NewClientError(
@@ -56,9 +95,14 @@ func (ths *postgreSQLRepository) GetUserByEmail(email string) (*models.User, err
 				404,
 			)
 		}
-
 		return nil, models.NewServerError("0100013", 500, err)
 	}
 
-	return &user, nil
+	return &models.User{
+		ID:       dbUser.UserID,
+		Password: dbUser.Password,
+		Profile: models.UserProfile{
+			ID: dbUser.ProfileID,
+		},
+	}, nil
 }
