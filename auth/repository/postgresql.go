@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -103,6 +104,42 @@ func (ths *postgreSQLRepository) GetUserWithProfileByEmail(email string) (*model
 		Password: dbUser.Password,
 		Profile: models.UserProfile{
 			ID: dbUser.ProfileID,
+		},
+	}, nil
+}
+
+func (ths *postgreSQLRepository) GetUserWithProfileByID(userID uint) (*models.User, error) {
+	var dbUser DBUserWithProfile
+	err := ths.db.Get(&dbUser,
+		`SELECT u.id AS user_id, email, p.id AS profile_id, name, 
+		dob, address, sex, phone_number, profile_photo
+		FROM "auth".user AS u, "auth".user_profile AS p 
+		WHERE u.id = p.user_id AND u.id=$1`,
+		userID,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, models.NewClientError(
+				"0100013",
+				fmt.Sprintf("no user found for ID %d", userID),
+				404,
+			)
+		}
+		return nil, models.NewServerError("0100013", 500, err)
+	}
+
+	return &models.User{
+		ID:      dbUser.UserID,
+		Email:   dbUser.Email,
+		IsAdmin: dbUser.IsAdmin,
+		Profile: models.UserProfile{
+			ID:           dbUser.ProfileID,
+			Name:         dbUser.Name,
+			DateOfBirth:  dbUser.DateOfBirth,
+			Address:      dbUser.Address,
+			Sex:          dbUser.Sex,
+			PhoneNumber:  dbUser.PhoneNumber,
+			ProfilePhoto: dbUser.ProfilePhoto,
 		},
 	}, nil
 }

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"github.com/dgrijalva/jwt-go"
+	"github.com/erizkiatama/rasalibrary-backend/auth/handler/middleware"
 	"github.com/erizkiatama/rasalibrary-backend/auth/helper"
 	"github.com/erizkiatama/rasalibrary-backend/models"
 	"github.com/gin-gonic/gin"
@@ -21,6 +22,11 @@ func NewAuthHandler(router *gin.RouterGroup, svc models.AuthService) {
 		auth.POST("/login", handler.Login)
 		auth.POST("/register", handler.Register)
 		auth.POST("/login/refresh", handler.RefreshToken)
+	}
+
+	user := router.Group("/user")
+	{
+		user.GET("/me", middleware.AuthorizeTokenJWT, handler.GetLoggedInUser)
 	}
 }
 
@@ -98,4 +104,24 @@ func (ths *handler) RefreshToken(c *gin.Context) {
 		"invalid refresh token",
 		401,
 	))
+}
+
+func (ths *handler) GetLoggedInUser(c *gin.Context) {
+	userID := c.GetUint("userID")
+	if userID == 0 {
+		models.ConstructResponse(c, nil, models.NewClientError(
+			"0100015",
+			"invalid token",
+			401,
+		))
+		return
+	}
+
+	user, err := ths.svc.GetLoggedInUser(userID)
+	if err != nil {
+		models.ConstructResponse(c, nil, err)
+		return
+	}
+
+	models.ConstructResponse(c, user, nil)
 }

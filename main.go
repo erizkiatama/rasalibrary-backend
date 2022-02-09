@@ -13,7 +13,10 @@ import (
 
 func main() {
 	router := gin.Default()
-	router.Use(cors.Default())
+	config := cors.DefaultConfig()
+	config.AllowAllOrigins = true
+	config.AddAllowHeaders("Authorization")
+	router.Use(cors.New(config))
 
 	router.GET("/server/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, "Server is OK!")

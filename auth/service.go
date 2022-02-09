@@ -53,6 +53,11 @@ func (ths *service) Register(req models.RegisterRequest) (*models.TokenPair, err
 		)
 	}
 
+	sex := "M"
+	if req.Sex != "Male" {
+		sex = "F"
+	}
+
 	newUser := models.User{
 		Email:    req.Email,
 		Password: hashedPassword,
@@ -61,7 +66,7 @@ func (ths *service) Register(req models.RegisterRequest) (*models.TokenPair, err
 			Name:         req.Name,
 			DateOfBirth:  dob,
 			Address:      req.Address,
-			Sex:          req.Sex,
+			Sex:          sex,
 			PhoneNumber:  req.PhoneNumber,
 			ProfilePhoto: req.ProfilePhoto,
 		},
@@ -78,4 +83,29 @@ func (ths *service) Register(req models.RegisterRequest) (*models.TokenPair, err
 	}
 
 	return tokenPair, nil
+}
+
+func (ths *service) GetLoggedInUser(userID uint) (*models.GetUserResponse, error) {
+	user, err := ths.repo.GetUserWithProfileByID(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	sex := "Male"
+	if user.Profile.Sex != "M" {
+		sex = "Female"
+	}
+
+	response := &models.GetUserResponse{
+		Email:        user.Email,
+		IsAdmin:      user.IsAdmin,
+		Name:         user.Profile.Name,
+		DateOfBirth:  user.Profile.DateOfBirth.Format(PARSE_DATE_FORMAT),
+		Address:      user.Profile.Address,
+		Sex:          sex,
+		PhoneNumber:  user.Profile.PhoneNumber,
+		ProfilePhoto: user.Profile.ProfilePhoto,
+	}
+
+	return response, nil
 }

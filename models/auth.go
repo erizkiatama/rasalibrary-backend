@@ -29,11 +29,13 @@ type UserProfile struct {
 type AuthService interface {
 	Login(LoginRequest) (*TokenPair, error)
 	Register(RegisterRequest) (*TokenPair, error)
+	GetLoggedInUser(uint) (*GetUserResponse, error)
 }
 
 type AuthRepository interface {
 	CreateUser(User) (uint, uint, error)
 	GetUserWithProfileByEmail(string) (*User, error)
+	GetUserWithProfileByID(uint) (*User, error)
 }
 
 type LoginRequest struct {
@@ -56,4 +58,15 @@ type RegisterRequest struct {
 type TokenPair struct {
 	Access  string `json:"access,omitempty"`
 	Refresh string `json:"refresh,omitempty"`
+}
+
+type GetUserResponse struct {
+	Email        string `json:"email"`
+	IsAdmin      bool   `json:"is_admin"`
+	Name         string `json:"name"`
+	DateOfBirth  string `json:"dob"`
+	Address      string `json:"address"`
+	Sex          string `json:"sex"`
+	PhoneNumber  string `json:"phone_number"`
+	ProfilePhoto string `json:"profile_photo"`
 }
